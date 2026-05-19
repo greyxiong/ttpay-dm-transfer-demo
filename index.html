@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TikTok Pay DM Transfer — Interactive Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #111;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+  h1 {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .subtitle {
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+  .scenario-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .tab-btn {
+    background: #222;
+    border: 1.5px solid #333;
+    color: #aaa;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: #FE2C55;
+    border-color: #FE2C55;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* Phone Frame */
+  .phone-wrap {
+    position: relative;
+    width: 375px;
+    max-width: 100%;
+  }
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    max-width: 100%;
+    background: #000;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid #2a2a2a;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px #1a1a1a;
+  }
+  .status-bar {
+    height: 44px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    position: relative;
+    z-index: 10;
+  }
+  .status-bar .time { color: #fff; font-size: 15px; font-weight: 600; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+  .status-bar .icons span { color: #fff; font-size: 12px; }
+  .notch {
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 30px;
+    background: #000;
+    border-radius: 0 0 18px 18px;
+    z-index: 20;
+  }
+
+  /* Screen layer */
+  .screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    flex-direction: column;
+    background: #fff;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Nav bar */
+  .nav-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: #fff;
+    border-bottom: 0.5px solid #e8e8e8;
+    flex-shrink: 0;
+  }
+  .nav-bar.dark { background: #121212; border-color: #2a2a2a; }
+  .nav-title { font-size: 16px; font-weight: 600; color: #000; }
+  .nav-title.white { color: #fff; }
+  .nav-back { font-size: 20px; cursor: pointer; color: #000; padding: 8px; margin: -8px; }
+  .nav-back.white { color: #fff; }
+  .nav-action { font-size: 14px; color: #FE2C55; font-weight: 500; cursor: pointer; }
+
+  /* DM Screen */
+  .dm-header {
+    background: #121212;
+    padding: 12px 16px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .dm-name { color: #fff; font-size: 15px; font-weight: 600; }
+  .dm-body { background: #121212; flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg-row { display: flex; align-items: flex-end; gap: 8px; }
+  .msg-row.self { flex-direction: row-reverse; }
+  .bubble {
+    max-width: 240px;
+    padding: 9px 13px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .bubble.recv { background: #2a2a2a; color: #fff; border-bottom-left-radius: 4px; }
+  .bubble.sent { background: #FE2C55; color: #fff; border-bottom-right-radius: 4px; }
+  .msg-time { font-size: 10px; color: #666; }
+
+  /* Transfer Card in DM */
+  .transfer-card {
+    background: #1e1e1e;
+    border-radius: 14px;
+    overflow: hidden;
+    width: 240px;
+    border: 1px solid #333;
+  }
+  .transfer-card-header {
+    background: linear-gradient(135deg, #FE2C55 0%, #ff6b35 100%);
+    padding: 12px 14px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tt-pay-logo {
+    background: rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+  .transfer-card-header span { font-size: 12px; color: rgba(255,255,255,0.9); }
+  .transfer-card-body { padding: 12px 14px; }
+  .transfer-amount { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+  .transfer-note { font-size: 12px; color: #888; margin-bottom: 10px; }
+  .transfer-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    font-weight: 500;
+  }
+  .transfer-status.pending { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+  .transfer-status.claimed { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+  .transfer-status.expired { background: rgba(255,255,255,0.08); color: #888; }
+  .claim-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #FE2C55, #ff6b35);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .claim-btn:disabled { background: #333; color: #666; }
+
+  /* Input bar */
+  .dm-input-bar {
+    background: #121212;
+    padding: 8px 12px 28px;
+    border-top: 0.5px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .dm-input {
+    flex: 1;
+    background: #2a2a2a;
+    border: none;
+    border-radius: 20px;
+    padding: 9px 14px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+  }
+  .dm-input::placeholder { color: #666; }
+  .plus-btn {
+    width: 36px; height: 36px;
+    background: #2a2a2a;
+    border: none;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 20px;
+    color: #fff;
+    transition: background 0.15s;
+  }
+  .plus-btn:active { background: #3a3a3a; }
+  .emoji-btn {
+    font-size: 22px; cursor: pointer; flex-shrink: 0;
+  }
+  .send-btn {
+    width: 36px; height: 36px;
+    background: #FE2C55;
+    border: none;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: #fff;
+    font-size: 16px;
+  }
+
+  /* Plus Panel */
+  .plus-panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #1a1a1a;
+    border-radius: 20px 20px 0 0;
+    padding: 16px 20px 40px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 50;
+  }
+  .plus-panel.open { transform: translateY(0); }
+  .panel-handle {
+    width: 36px; height: 4px;
+    background: #3a3a3a;
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .panel-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .panel-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .panel-icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .panel-icon.pay { background: linear-gradient(135deg, #FE2C55, #ff6b35); }
+  .panel-icon.photo { background: #2a2a2a; }
+  .panel-icon.video { background: #2a2a2a; }
+  .panel-icon.sticker { background: #2a2a2a; }
+  .panel-label { font-size: 11px; color: #aaa; text-align: center; }
+  .panel-label.highlight { color: #FE2C55; font-weight: 600; }
+
+  /* Sheet / modal */
+  .sheet-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 60;
+    display: none;
+    align-items: flex-end;
+  }
+  .sheet-overlay.open { display: flex; }
+  .sheet {
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .sheet-handle-bar {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 4px;
+  }
+  .sheet-handle { width: 36px; height: 4px; background: #e0e0e0; border-radius: 2px; }
+  .sheet-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+    text-align: center;
+    padding: 4px 16px 16px;
+  }
+
+  /* Amount Input Sheet */
+  .recipient-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px 16px;
+    border-bottom: 0.5px solid #f0f0f0;
+  }
+  .recipient-info .name { font-size: 15px; font-weight: 600; color: #111; }
+  .recipient-info .handle { font-size: 12px; color: #888; }
+  .amount-display {
+    text-align: center;
+    padding: 24px 20px 8px;
+  }
+  .amount-currency { font-size: 22px; font-weight: 700; color: #111; }
+  .amount-number { font-size: 48px; font-weight: 700; color: #111; letter-spacing: -2px; display: inline; }
+  .amount-placeholder { color: #d0d0d0; }
+  .amount-hint { font-size: 12px; color: #aaa; margin-top: 4px; }
+  .quick-amounts {
+    display: flex;
+    gap: 8px;
+    padding: 8px 20px 16px;
+    justify-content: center;
+  }
+  .quick-chip {
+    background: #f5f5f5;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .quick-chip:active { background: #ffe0e6; color: #FE2C55; }
+  .note-input {
+    margin: 0 20px 16px;
+    background: #f8f8f8;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: #333;
+    outline: none;
+    width: calc(100% - 40px);
+  }
+  .note-input::placeholder { color: #bbb; }
+  .action-btn {
+    margin: 0 20px 20px;
+    width: calc(100% - 40px);
+    background: #FE2C55;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .action-btn:disabled { background: #e0e0e0; color: #aaa; }
+  .action-btn.secondary { background: #f5f5f5; color: #333; }
+
+  /* Numpad */
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: #f8f8f8;
+    border-top: 0.5px solid #e8e8e8;
+  }
+  .numpad-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    font-size: 22px;
+    font-weight: 500;
+    color: #111;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .numpad-key:active { background: #e8e8e8; }
+  .numpad-key.delete { font-size: 18px; color: #666; }
+  .numpad-key.empty { pointer-events: none; }
+
+  /* PIN Screen */
+  .pin-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 0;
+    background: #fff;
+  }
+  .pin-lock-icon { font-size: 40px; margin-bottom: 16px; }
+  .pin-title { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .pin-subtitle { font-size: 13px; color: #888; margin-bottom: 32px; text-align: center; }
+  .pin-dots {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .pin-dot.filled { background: #FE2C55; border-color: #FE2C55; }
+  .pin-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+    max-width: 300px;
+    gap: 0;
+  }
+  .pin-key {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 72px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.1s;
+  }
+  .pin-key:active { background: #f5f5f5; }
+  .pin-key .num { font-size: 28px; font-weight: 400; color: #111; }
+  .pin-key .letters { font-size: 10px; color: #999; letter-spacing: 1px; }
+  .pin-key.del .num { font-size: 22px; color: #666; }
+  .pin-key.empty { pointer-events: none; }
+
+  /* Success Screen */
+  .success-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #fff;
+  }
+  .success-anim {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FE2C55, #ff6b35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+    margin-bottom: 20px;
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .success-title { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .success-amount { font-size: 36px; font-weight: 700; color: #FE2C55; margin-bottom: 6px; }
+  .success-sub { font-size: 14px; color: #888; margin-bottom: 32px; text-align: center; }
+  .success-detail {
+    background: #f8f8f8;
+    border-radius: 14px;
+    padding: 16px 20px;
+    width: 100%;
+    margin-bottom: 24px;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .detail-row:not(:last-child) { border-bottom: 0.5px solid #e8e8e8; }
+  .detail-label { font-size: 13px; color: #888; }
+  .detail-value { font-size: 13px; color: #111; font-weight: 500; }
+
+  /* Claim Screen — Receiver view */
+  .claim-card {
+    margin: 20px;
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .claim-card-top {
+    padding: 20px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sender-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sender-info .sent-by { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .sender-info .sender-name { font-size: 16px; font-weight: 700; color: #fff; }
+  .claim-amount-wrap {
+    text-align: center;
+    padding: 16px 20px 20px;
+  }
+  .claim-vnd { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+  .claim-amount { font-size: 40px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+  .claim-note-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+  .claim-divider { height: 0.5px; background: rgba(255,255,255,0.1); margin: 0 20px; }
+  .claim-expire {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  .claim-action-btn {
+    margin: 0 20px 24px;
+    width: calc(100% - 40px);
+    background: linear-gradient(135deg, #FE2C55, #ff6b35);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(254, 44, 85, 0.4);
+  }
+  .ttpay-tag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  .ttpay-badge {
+    background: rgba(254, 44, 85, 0.15);
+    border: 1px solid rgba(254, 44, 85, 0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: #FE2C55;
+    font-weight: 600;
+  }
+
+  /* Onboarding Guide */
+  .guide-card {
+    margin: 20px;
+    background: #fff;
+    border-radius: 20px;
+    border: 1.5px solid #f0f0f0;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  .guide-card-header {
+    background: linear-gradient(135deg, #FE2C55, #ff6b35);
+    padding: 20px;
+    text-align: center;
+  }
+  .guide-card-header .icon { font-size: 40px; margin-bottom: 8px; }
+  .guide-card-header .title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .guide-card-header .sub { font-size: 13px; color: rgba(255,255,255,0.8); }
+  .guide-steps {
+    padding: 20px;
+  }
+  .guide-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #fff0f3;
+    color: #FE2C55;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-text .label { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 2px; }
+  .step-text .desc { font-size: 12px; color: #888; }
+  .pending-amount-banner {
+    background: #fff8f0;
+    border: 1px solid #ffe0b2;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 0 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pending-amount-banner .icon { font-size: 20px; }
+  .pending-amount-banner .text .label { font-size: 13px; font-weight: 600; color: #e65100; }
+  .pending-amount-banner .text .value { font-size: 16px; font-weight: 700; color: #ff6f00; }
+
+  /* Progress indicators */
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 12px 0;
+  }
+  .pdot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    transition: all 0.2s;
+  }
+  .pdot.active { background: #FE2C55; width: 18px; border-radius: 3px; }
+
+  /* Home button indicator */
+  .home-bar {
+    height: 34px;
+    background: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .home-indicator {
+    width: 134px; height: 5px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 3px;
+  }
+  .dark-home .home-indicator { background: rgba(255,255,255,0.2); }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Balance display */
+  .balance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8f8f8;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 0 20px 16px;
+  }
+  .balance-label { font-size: 12px; color: #888; }
+  .balance-amount { font-size: 15px; font-weight: 700; color: #111; }
+
+  /* Transfer detail page */
+  .transfer-result-card {
+    margin: 20px;
+    background: linear-gradient(135deg, #FE2C55 0%, #ff6b35 100%);
+    border-radius: 20px;
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .tr-icon { font-size: 40px; margin-bottom: 12px; }
+  .tr-amount { font-size: 38px; font-weight: 800; color: #fff; letter-spacing: -1px; margin-bottom: 4px; }
+  .tr-to { font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 4px; }
+  .tr-time { font-size: 12px; color: rgba(255,255,255,0.6); }
+</style>
+</head>
+<body>
+
+<h1>TikTok Pay — DM 转账 Demo</h1>
+<p class="subtitle">VN/MY MVP · 3 个核心场景 · 点击交互</p>
+
+<div class="scenario-tabs">
+  <button class="tab-btn active" onclick="switchScenario('sender')">💸 付款方发起</button>
+  <button class="tab-btn" onclick="switchScenario('receiver')">📩 收款方确认</button>
+  <button class="tab-btn" onclick="switchScenario('onboard')">🆕 未开通引导</button>
+</div>
+
+<!-- ============ PHONE FRAME ============ -->
+<div class="phone-wrap">
+<div class="phone-frame" id="phoneFrame">
+  <div class="notch"></div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="statusBar" style="background:#121212">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <span>●●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- ===================== SCENARIO A: SENDER ===================== -->
+
+  <!-- A1: DM Conversation -->
+  <div class="screen active" id="s-dm" style="background:#121212; flex-direction:column;">
+    <div class="dm-header">
+      <div class="avatar" style="background:#2a2a2a; font-size:22px;">🐱</div>
+      <div>
+        <div class="dm-name">Linh Nguyen</div>
+        <div style="font-size:11px;color:#888;">@linhvn · TikTok Pay ✓</div>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:12px;">
+        <span style="color:#fff; font-size:18px; cursor:pointer;">📞</span>
+        <span style="color:#fff; font-size:18px; cursor:pointer;">⋮</span>
+      </div>
+    </div>
+    <div class="screen-body dm-body" id="dmBody">
+      <div style="text-align:center; color:#555; font-size:12px; padding: 8px 0;">Today 9:30 AM</div>
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🐱</div>
+        <div class="bubble recv">Haha đúng rồi 😂 mình cần trả tiền pizza hôm qua</div>
+      </div>
+      <div class="msg-row self">
+        <div class="bubble sent">Ok mình chuyển cho bạn luôn nha!</div>
+      </div>
+      <!-- Transfer card will appear here -->
+    </div>
+    <!-- Input bar -->
+    <div class="dm-input-bar" id="dmInputBar">
+      <button class="plus-btn" onclick="openPlusPanel()">＋</button>
+      <input class="dm-input" placeholder="Message..." />
+      <span class="emoji-btn">😊</span>
+      <button class="send-btn">➤</button>
+    </div>
+    <!-- Plus Panel -->
+    <div class="plus-panel" id="plusPanel">
+      <div class="panel-handle"></div>
+      <div class="panel-grid">
+        <div class="panel-item" onclick="openAmountSheet()">
+          <div class="panel-icon pay">💸</div>
+          <div class="panel-label highlight">转账</div>
+        </div>
+        <div class="panel-item" onclick="closePlusPanel()">
+          <div class="panel-icon photo">📷</div>
+          <div class="panel-label">Photo</div>
+        </div>
+        <div class="panel-item" onclick="closePlusPanel()">
+          <div class="panel-icon video">🎥</div>
+          <div class="panel-label">Video</div>
+        </div>
+        <div class="panel-item" onclick="closePlusPanel()">
+          <div class="panel-icon sticker">🎁</div>
+          <div class="panel-label">Sticker</div>
+        </div>
+      </div>
+    </div>
+    <!-- Amount Sheet -->
+    <div class="sheet-overlay" id="amountSheet">
+      <div class="sheet" style="max-height: 90%">
+        <div class="sheet-handle-bar"><div class="sheet-handle"></div></div>
+        <div class="sheet-title">转账给 Linh</div>
+        <div class="recipient-row">
+          <div class="avatar" style="background:#ffe0e6; font-size:20px; width:40px; height:40px;">🐱</div>
+          <div class="recipient-info">
+            <div class="name">Linh Nguyen</div>
+            <div class="handle">@linhvn · TikTok Pay ✓</div>
+          </div>
+        </div>
+        <div class="amount-display">
+          <span class="amount-currency">₫ </span><span class="amount-number" id="amtDisplay"><span class="amount-placeholder">0</span></span>
+        </div>
+        <div class="amount-hint" id="amtHint">单笔上限 ₫5,000,000</div>
+        <div class="quick-amounts">
+          <button class="quick-chip" onclick="setAmount('50000')">₫50K</button>
+          <button class="quick-chip" onclick="setAmount('100000')">₫100K</button>
+          <button class="quick-chip" onclick="setAmount('200000')">₫200K</button>
+          <button class="quick-chip" onclick="setAmount('500000')">₫500K</button>
+        </div>
+        <input class="note-input" id="noteInput" placeholder="添加附言（可选，如：pizza 钱）" />
+        <div class="balance-row">
+          <span class="balance-label">可用余额</span>
+          <span class="balance-amount">₫ 1,250,000</span>
+        </div>
+        <button class="action-btn" id="nextBtn" disabled onclick="goToPin()">下一步</button>
+        <div class="numpad">
+          <button class="numpad-key" onclick="numInput('1')">1</button>
+          <button class="numpad-key" onclick="numInput('2')">2</button>
+          <button class="numpad-key" onclick="numInput('3')">3</button>
+          <button class="numpad-key" onclick="numInput('4')">4</button>
+          <button class="numpad-key" onclick="numInput('5')">5</button>
+          <button class="numpad-key" onclick="numInput('6')">6</button>
+          <button class="numpad-key" onclick="numInput('7')">7</button>
+          <button class="numpad-key" onclick="numInput('8')">8</button>
+          <button class="numpad-key" onclick="numInput('9')">9</button>
+          <button class="numpad-key empty"></button>
+          <button class="numpad-key" onclick="numInput('0')">0</button>
+          <button class="numpad-key delete" onclick="numDelete()">⌫</button>
+        </div>
+      </div>
+    </div>
+    <div class="home-bar dark-home"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- A2: PIN Verification -->
+  <div class="screen" id="s-pin">
+    <div class="nav-bar">
+      <span class="nav-back" onclick="goBack('s-pin','s-dm'); closeAmountSheet();">‹</span>
+      <span class="nav-title">输入 PIN</span>
+      <span></span>
+    </div>
+    <div class="pin-screen">
+      <div class="pin-lock-icon">🔐</div>
+      <div class="pin-title">验证身份</div>
+      <div class="pin-subtitle">输入 TikTok Pay PIN<br>转账 <strong id="pinAmtShow">₫100,000</strong> 给 Linh</div>
+      <div class="pin-dots" id="pinDots">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+      <div class="pin-numpad">
+        <div class="pin-key" onclick="pinInput('1')"><span class="num">1</span></div>
+        <div class="pin-key" onclick="pinInput('2')"><span class="num">2</span><span class="letters">ABC</span></div>
+        <div class="pin-key" onclick="pinInput('3')"><span class="num">3</span><span class="letters">DEF</span></div>
+        <div class="pin-key" onclick="pinInput('4')"><span class="num">4</span><span class="letters">GHI</span></div>
+        <div class="pin-key" onclick="pinInput('5')"><span class="num">5</span><span class="letters">JKL</span></div>
+        <div class="pin-key" onclick="pinInput('6')"><span class="num">6</span><span class="letters">MNO</span></div>
+        <div class="pin-key" onclick="pinInput('7')"><span class="num">7</span><span class="letters">PQRS</span></div>
+        <div class="pin-key" onclick="pinInput('8')"><span class="num">8</span><span class="letters">TUV</span></div>
+        <div class="pin-key" onclick="pinInput('9')"><span class="num">9</span><span class="letters">WXYZ</span></div>
+        <div class="pin-key empty"></div>
+        <div class="pin-key" onclick="pinInput('0')"><span class="num">0</span></div>
+        <div class="pin-key del" onclick="pinDelete()"><span class="num">⌫</span></div>
+      </div>
+      <button style="margin-top:16px; background:none; border:none; color:#FE2C55; font-size:14px; cursor:pointer;">使用 Face ID</button>
+    </div>
+    <div class="home-bar"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- A3: Transfer Success -->
+  <div class="screen" id="s-success" style="background:#fff;">
+    <div class="nav-bar">
+      <span></span>
+      <span class="nav-title">转账成功</span>
+      <span class="nav-action" onclick="showDmWithCard()">返回对话</span>
+    </div>
+    <div class="success-screen">
+      <div class="success-anim">✓</div>
+      <div class="success-title">转账成功！</div>
+      <div class="success-amount" id="successAmt">₫100,000</div>
+      <div class="success-sub">已发送给 Linh Nguyen<br>等待对方确认收款</div>
+      <div class="success-detail">
+        <div class="detail-row">
+          <span class="detail-label">收款方</span>
+          <span class="detail-value">Linh Nguyen</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">金额</span>
+          <span class="detail-value" id="successAmt2">₫100,000</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">附言</span>
+          <span class="detail-value" id="successNote">Pizza 钱</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">手续费</span>
+          <span class="detail-value" style="color:#4caf50;">免费</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">到账时间</span>
+          <span class="detail-value">确认后即时到账</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">有效期</span>
+          <span class="detail-value">24 小时</span>
+        </div>
+      </div>
+      <button class="action-btn" onclick="showDmWithCard()">返回对话</button>
+    </div>
+    <div class="home-bar"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- A4: DM with card -->
+  <div class="screen" id="s-dm-card" style="background:#121212; flex-direction:column;">
+    <div class="dm-header">
+      <div class="avatar" style="background:#2a2a2a; font-size:22px;">🐱</div>
+      <div>
+        <div class="dm-name">Linh Nguyen</div>
+        <div style="font-size:11px;color:#888;">@linhvn · TikTok Pay ✓</div>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:12px;">
+        <span style="color:#fff; font-size:18px;">📞</span>
+        <span style="color:#fff; font-size:18px;">⋮</span>
+      </div>
+    </div>
+    <div class="screen-body dm-body">
+      <div style="text-align:center; color:#555; font-size:12px; padding: 8px 0;">Today 9:30 AM</div>
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🐱</div>
+        <div class="bubble recv">Haha đúng rồi 😂 mình cần trả tiền pizza hôm qua</div>
+      </div>
+      <div class="msg-row self">
+        <div class="bubble sent">Ok mình chuyển cho bạn luôn nha!</div>
+      </div>
+      <!-- Transfer card -->
+      <div class="msg-row self" style="align-items: flex-end;">
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <div class="transfer-card">
+            <div class="transfer-card-header">
+              <div class="tt-pay-logo">TikTok Pay</div>
+              <span>转账</span>
+            </div>
+            <div class="transfer-card-body">
+              <div class="transfer-amount" id="cardAmt">₫100,000</div>
+              <div class="transfer-note" id="cardNote">Pizza 钱</div>
+              <span class="transfer-status pending">⏳ 待确认</span>
+            </div>
+          </div>
+          <div class="msg-time">9:41 AM ✓✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="dm-input-bar">
+      <button class="plus-btn">＋</button>
+      <input class="dm-input" placeholder="Message..." />
+      <span class="emoji-btn">😊</span>
+      <button class="send-btn">➤</button>
+    </div>
+    <div class="home-bar dark-home"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- ===================== SCENARIO B: RECEIVER ===================== -->
+
+  <!-- B1: Receiver DM view -->
+  <div class="screen" id="s-recv-dm" style="background:#121212; flex-direction:column;">
+    <div class="dm-header">
+      <div class="avatar" style="background:#2a2a2a; font-size:22px;">🙋</div>
+      <div>
+        <div class="dm-name">An Tran</div>
+        <div style="font-size:11px;color:#888;">@antran · TikTok Pay ✓</div>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:12px;">
+        <span style="color:#fff; font-size:18px;">📞</span>
+        <span style="color:#fff; font-size:18px;">⋮</span>
+      </div>
+    </div>
+    <div class="screen-body dm-body">
+      <div style="text-align:center; color:#555; font-size:12px; padding: 8px 0;">Today 9:40 AM</div>
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🙋</div>
+        <div class="bubble recv">Chờ mình chuyển nha! 😁</div>
+      </div>
+      <!-- Incoming transfer card -->
+      <div class="msg-row" style="align-items:flex-end;">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🙋</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div class="transfer-card" style="cursor:pointer;" onclick="openClaimSheet()">
+            <div class="transfer-card-header">
+              <div class="tt-pay-logo">TikTok Pay</div>
+              <span>收到转账</span>
+            </div>
+            <div class="transfer-card-body">
+              <div class="transfer-amount">₫100,000</div>
+              <div class="transfer-note">Pizza 钱</div>
+              <span class="transfer-status pending">⏳ 点击确认收款</span>
+            </div>
+          </div>
+          <div class="msg-time">9:41 AM</div>
+        </div>
+      </div>
+    </div>
+    <div class="dm-input-bar">
+      <button class="plus-btn">＋</button>
+      <input class="dm-input" placeholder="Message..." />
+      <span class="emoji-btn">😊</span>
+      <button class="send-btn">➤</button>
+    </div>
+    <!-- Claim Sheet -->
+    <div class="sheet-overlay" id="claimSheet">
+      <div class="sheet">
+        <div class="sheet-handle-bar"><div class="sheet-handle"></div></div>
+        <div class="claim-card">
+          <div class="claim-card-top">
+            <div class="sender-avatar" style="background:rgba(255,255,255,0.1);">🙋</div>
+            <div class="sender-info">
+              <div class="sent-by">An Tran 向你转账</div>
+              <div class="sender-name">@antran</div>
+            </div>
+            <div class="ttpay-badge" style="margin-left:auto;">TikTok Pay</div>
+          </div>
+          <div class="claim-divider"></div>
+          <div class="claim-amount-wrap">
+            <div class="claim-vnd">越南盾 (VND)</div>
+            <div class="claim-amount">₫100,000</div>
+            <div class="claim-note-text">"Pizza 钱"</div>
+          </div>
+          <div class="claim-divider"></div>
+          <div class="claim-expire">⏰ 剩余 23 小时 58 分钟过期</div>
+        </div>
+        <div style="padding: 16px 20px 8px; font-size:13px; color:#888; text-align:center;">
+          收款后资金将立即入账至 TikTok Pay 余额
+        </div>
+        <button class="claim-action-btn" onclick="confirmClaim()">确认收款</button>
+        <button class="action-btn secondary" style="margin-top:0; margin-bottom:24px;" onclick="closeClaimSheet()">稍后再说</button>
+      </div>
+    </div>
+    <div class="home-bar dark-home"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- B2: Claim Success -->
+  <div class="screen" id="s-recv-success" style="background:#fff;">
+    <div class="nav-bar">
+      <span></span>
+      <span class="nav-title">收款成功</span>
+      <span class="nav-action" onclick="showRecvDmClaimed()">返回</span>
+    </div>
+    <div class="success-screen">
+      <div class="success-anim">💰</div>
+      <div class="success-title">已收到转账</div>
+      <div class="success-amount">₫100,000</div>
+      <div class="success-sub">来自 An Tran<br>已到账 TikTok Pay 余额</div>
+      <div class="success-detail">
+        <div class="detail-row">
+          <span class="detail-label">付款方</span>
+          <span class="detail-value">An Tran</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">金额</span>
+          <span class="detail-value">₫100,000</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">附言</span>
+          <span class="detail-value">Pizza 钱</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">手续费</span>
+          <span class="detail-value" style="color:#4caf50;">免费</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">当前余额</span>
+          <span class="detail-value" style="color:#4caf50;">₫350,000</span>
+        </div>
+      </div>
+      <button class="action-btn" onclick="showRecvDmClaimed()">查看对话</button>
+      <button class="action-btn secondary" style="margin-top:8px; margin-bottom:0;">查看账单</button>
+    </div>
+    <div class="home-bar"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- B3: DM with claimed card -->
+  <div class="screen" id="s-recv-claimed" style="background:#121212; flex-direction:column;">
+    <div class="dm-header">
+      <div class="avatar" style="background:#2a2a2a; font-size:22px;">🙋</div>
+      <div>
+        <div class="dm-name">An Tran</div>
+        <div style="font-size:11px;color:#888;">@antran · TikTok Pay ✓</div>
+      </div>
+    </div>
+    <div class="screen-body dm-body">
+      <div style="text-align:center; color:#555; font-size:12px; padding: 8px 0;">Today 9:40 AM</div>
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🙋</div>
+        <div class="bubble recv">Chờ mình chuyển nha! 😁</div>
+      </div>
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🙋</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div class="transfer-card">
+            <div class="transfer-card-header">
+              <div class="tt-pay-logo">TikTok Pay</div>
+              <span>收到转账</span>
+            </div>
+            <div class="transfer-card-body">
+              <div class="transfer-amount">₫100,000</div>
+              <div class="transfer-note">Pizza 钱</div>
+              <span class="transfer-status claimed">✓ 已收款</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="msg-row self">
+        <div class="bubble sent" style="font-size:20px;">🙏</div>
+      </div>
+    </div>
+    <div class="dm-input-bar">
+      <button class="plus-btn">＋</button>
+      <input class="dm-input" placeholder="Message..." />
+      <span class="emoji-btn">😊</span>
+      <button class="send-btn">➤</button>
+    </div>
+    <div class="home-bar dark-home"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- ===================== SCENARIO C: ONBOARDING ===================== -->
+
+  <!-- C1: Non-user receives card -->
+  <div class="screen" id="s-notp-dm" style="background:#121212; flex-direction:column;">
+    <div class="dm-header">
+      <div class="avatar" style="background:#2a2a2a; font-size:22px;">🙋</div>
+      <div>
+        <div class="dm-name">Minh Le</div>
+        <div style="font-size:11px;color:#888;">@minhle</div>
+      </div>
+    </div>
+    <div class="screen-body dm-body">
+      <div style="text-align:center; color:#555; font-size:12px; padding: 8px 0;">Today 3:20 PM</div>
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🙋</div>
+        <div class="bubble recv">Cảm ơn bạn nhiều lắm nhé! 😊</div>
+      </div>
+      <!-- Non-user incoming card -->
+      <div class="msg-row">
+        <div class="avatar" style="background:#2a2a2a; font-size:16px; width:28px; height:28px;">🙋</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div class="transfer-card" style="cursor:pointer;" onclick="openOnboardSheet()">
+            <div class="transfer-card-header">
+              <div class="tt-pay-logo">TikTok Pay</div>
+              <span>收到转账</span>
+            </div>
+            <div class="transfer-card-body">
+              <div class="transfer-amount">₫200,000</div>
+              <div class="transfer-note">请你吃饭～</div>
+              <span class="transfer-status pending" style="background:rgba(255,255,255,0.08); color:#ffc107;">👆 开通即可收款</span>
+            </div>
+          </div>
+          <div class="msg-time">3:20 PM</div>
+        </div>
+      </div>
+    </div>
+    <div class="dm-input-bar">
+      <button class="plus-btn">＋</button>
+      <input class="dm-input" placeholder="Message..." />
+      <span class="emoji-btn">😊</span>
+      <button class="send-btn">➤</button>
+    </div>
+    <!-- Onboard Sheet -->
+    <div class="sheet-overlay" id="onboardSheet">
+      <div class="sheet" style="max-height:85%">
+        <div class="sheet-handle-bar"><div class="sheet-handle"></div></div>
+        <div class="sheet-title">有人给你转账了！</div>
+        <div class="pending-amount-banner">
+          <span class="icon">⏳</span>
+          <div class="text">
+            <div class="label">待收款金额</div>
+            <div class="value">₫200,000</div>
+          </div>
+          <div style="margin-left:auto; font-size:12px; color:#e65100; font-weight:600;">剩余 23h 58m</div>
+        </div>
+        <div class="guide-card">
+          <div class="guide-card-header">
+            <div class="icon">💳</div>
+            <div class="title">开通 TikTok Pay</div>
+            <div class="sub">免费开通，3 分钟完成，立刻收款</div>
+          </div>
+          <div class="guide-steps">
+            <div class="guide-step">
+              <div class="step-num">1</div>
+              <div class="step-text">
+                <div class="label">验证手机号</div>
+                <div class="desc">使用 +84 越南手机号</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">2</div>
+              <div class="step-text">
+                <div class="label">实名认证（KYC）</div>
+                <div class="desc">拍摄身份证 + 人脸识别</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">3</div>
+              <div class="step-text">
+                <div class="label">设置 PIN</div>
+                <div class="desc">6 位数字支付密码</div>
+              </div>
+            </div>
+            <div class="guide-step" style="margin-bottom:0;">
+              <div class="step-num" style="background:#e8f5e9; color:#4caf50;">✓</div>
+              <div class="step-text">
+                <div class="label" style="color:#4caf50;">立即收款 ₫200,000</div>
+                <div class="desc">资金到账 TikTok Pay 余额</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="action-btn" onclick="goToKyc()">立即开通 TikTok Pay</button>
+        <button class="action-btn secondary" style="margin-top:0; margin-bottom:24px;" onclick="closeOnboardSheet()">稍后再说</button>
+      </div>
+    </div>
+    <div class="home-bar dark-home"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- C2: KYC flow start -->
+  <div class="screen" id="s-kyc" style="background:#fff;">
+    <div class="nav-bar">
+      <span class="nav-back" onclick="showScreen('s-notp-dm')">‹</span>
+      <span class="nav-title">开通 TikTok Pay</span>
+      <span></span>
+    </div>
+    <div class="screen-body" style="padding: 20px 0;">
+      <div class="progress-dots" style="padding:12px 0 20px;">
+        <div class="pdot active"></div>
+        <div class="pdot"></div>
+        <div class="pdot"></div>
+      </div>
+      <div style="padding: 0 20px;">
+        <div style="font-size:18px; font-weight:700; color:#111; margin-bottom:6px;">验证手机号</div>
+        <div style="font-size:13px; color:#888; margin-bottom:24px;">我们将向此号码发送 OTP 验证码</div>
+        <div style="background:#f8f8f8; border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+          <span style="font-size:20px;">🇻🇳</span>
+          <span style="font-size:15px; color:#888; border-right:1px solid #e0e0e0; padding-right:10px;">+84</span>
+          <input style="background:none; border:none; outline:none; font-size:16px; color:#111; flex:1;" placeholder="09x xxx xxxx" value="098 234 5678" />
+        </div>
+        <div style="font-size:12px; color:#aaa; margin-bottom:32px; line-height:1.5;">
+          继续即表示你同意 TikTok Pay <span style="color:#FE2C55;">服务条款</span> 及 <span style="color:#FE2C55;">隐私政策</span>
+        </div>
+        <div style="background:#fff8f0; border:1px solid #ffe0b2; border-radius:12px; padding:12px 16px; margin-bottom:24px; display:flex; gap:10px;">
+          <span>⏳</span>
+          <span style="font-size:13px; color:#e65100;">开通后可立即收取 <strong>₫200,000</strong>，剩余 23h 58m</span>
+        </div>
+        <button class="action-btn" onclick="goToKyc2()" style="margin:0; width:100%;">发送验证码</button>
+      </div>
+    </div>
+    <div class="home-bar"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- C3: KYC Success / Return to claim -->
+  <div class="screen" id="s-kyc-done" style="background:#fff;">
+    <div class="nav-bar">
+      <span></span>
+      <span class="nav-title">开通成功</span>
+      <span></span>
+    </div>
+    <div class="success-screen">
+      <div class="success-anim" style="background:linear-gradient(135deg,#4caf50,#66bb6a);">🎉</div>
+      <div class="success-title">TikTok Pay 已开通！</div>
+      <div style="font-size:14px; color:#888; margin-bottom:24px; text-align:center;">还有待领取的转账等你收款</div>
+      <div style="background: linear-gradient(160deg, #1a1a2e, #0f3460); border-radius:16px; padding:20px; width:100%; margin-bottom:24px; text-align:center;">
+        <div style="font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:4px;">待收款</div>
+        <div style="font-size:36px; font-weight:800; color:#fff; letter-spacing:-1px;">₫200,000</div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.6); margin-top:4px; font-style:italic;">"请你吃饭～"</div>
+      </div>
+      <button class="action-btn" onclick="showFinalClaim()" style="width:100%; margin:0;">立即收款</button>
+    </div>
+    <div class="home-bar"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- C4: Final claim success -->
+  <div class="screen" id="s-final-claim" style="background:#fff;">
+    <div class="nav-bar">
+      <span></span>
+      <span class="nav-title">收款成功</span>
+      <span class="nav-action" onclick="showScreen('s-notp-dm')">完成</span>
+    </div>
+    <div class="success-screen">
+      <div class="success-anim">💰</div>
+      <div class="success-title">已收到 ₫200,000</div>
+      <div class="success-sub" style="margin-bottom:20px;">已存入 TikTok Pay 余额<br>现在可以在 TikTok 内消费使用</div>
+      <div class="success-detail">
+        <div class="detail-row">
+          <span class="detail-label">余额</span>
+          <span class="detail-value" style="color:#4caf50; font-size:16px; font-weight:700;">₫200,000</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">可用于</span>
+          <span class="detail-value">电商消费、转账、提现</span>
+        </div>
+      </div>
+      <button class="action-btn" onclick="showScreen('s-notp-dm')" style="margin-top:8px;">回到对话</button>
+    </div>
+    <div class="home-bar"><div class="home-indicator"></div></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div><!-- /phone-frame -->
+</div><!-- /phone-wrap -->
+
+<script>
+// ========== STATE ==========
+let currentAmount = '';
+let currentNote = '';
+let pinValue = '';
+let currentScenario = 'sender';
+
+// ========== SCENARIO SWITCHING ==========
+function switchScenario(s) {
+  currentScenario = s;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Reset state
+  currentAmount = '';
+  currentNote = '';
+  pinValue = '';
+  updateAmtDisplay();
+  updatePinDots();
+  closePlusPanel();
+  closeAmountSheet();
+  closeClaimSheet();
+  closeOnboardSheet();
+
+  if (s === 'sender') {
+    showScreen('s-dm');
+    document.getElementById('statusBar').style.background = '#121212';
+  } else if (s === 'receiver') {
+    showScreen('s-recv-dm');
+    document.getElementById('statusBar').style.background = '#121212';
+  } else if (s === 'onboard') {
+    showScreen('s-notp-dm');
+    document.getElementById('statusBar').style.background = '#121212';
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+  // Status bar color
+  const darkScreens = ['s-dm','s-dm-card','s-recv-dm','s-recv-claimed','s-notp-dm'];
+  const sb = document.getElementById('statusBar');
+  sb.style.background = darkScreens.includes(id) ? '#121212' : '#fff';
+  sb.querySelectorAll('.time, .icons span').forEach(el => {
+    el.style.color = darkScreens.includes(id) ? '#fff' : '#000';
+  });
+}
+
+function goBack(from, to) { showScreen(to); }
+
+// ========== PLUS PANEL ==========
+function openPlusPanel() {
+  document.getElementById('plusPanel').classList.add('open');
+}
+function closePlusPanel() {
+  document.getElementById('plusPanel').classList.remove('open');
+}
+
+// ========== AMOUNT SHEET ==========
+function openAmountSheet() {
+  closePlusPanel();
+  document.getElementById('amountSheet').classList.add('open');
+}
+function closeAmountSheet() {
+  document.getElementById('amountSheet').classList.remove('open');
+}
+
+function numInput(v) {
+  if (currentAmount.length >= 9) return;
+  if (currentAmount === '' && v === '0') return;
+  currentAmount += v;
+  updateAmtDisplay();
+}
+function numDelete() {
+  currentAmount = currentAmount.slice(0, -1);
+  updateAmtDisplay();
+}
+function setAmount(v) {
+  currentAmount = v;
+  updateAmtDisplay();
+}
+function updateAmtDisplay() {
+  const disp = document.getElementById('amtDisplay');
+  const btn = document.getElementById('nextBtn');
+  if (!currentAmount) {
+    disp.innerHTML = '<span class="amount-placeholder">0</span>';
+    btn.disabled = true;
+  } else {
+    const num = parseInt(currentAmount);
+    disp.textContent = num.toLocaleString('vi-VN');
+    if (num > 5000000) {
+      document.getElementById('amtHint').style.color = '#FE2C55';
+      document.getElementById('amtHint').textContent = '⚠️ 超过单笔限额 ₫5,000,000';
+      btn.disabled = true;
+    } else if (num > 1250000) {
+      document.getElementById('amtHint').style.color = '#FE2C55';
+      document.getElementById('amtHint').textContent = '⚠️ 超过余额 ₫1,250,000';
+      btn.disabled = true;
+    } else {
+      document.getElementById('amtHint').style.color = '#aaa';
+      document.getElementById('amtHint').textContent = '单笔上限 ₫5,000,000';
+      btn.disabled = false;
+    }
+  }
+}
+
+function goToPin() {
+  currentNote = document.getElementById('noteInput').value || '无附言';
+  const amt = parseInt(currentAmount);
+  const fmtAmt = '₫' + amt.toLocaleString('vi-VN');
+  document.getElementById('pinAmtShow').textContent = fmtAmt;
+  closeAmountSheet();
+  showScreen('s-pin');
+}
+
+// ========== PIN ==========
+function pinInput(v) {
+  if (pinValue.length >= 6) return;
+  pinValue += v;
+  updatePinDots();
+  if (pinValue.length === 6) {
+    setTimeout(processPin, 400);
+  }
+}
+function pinDelete() {
+  pinValue = pinValue.slice(0, -1);
+  updatePinDots();
+}
+function updatePinDots() {
+  const dots = document.querySelectorAll('#pinDots .pin-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('filled', i < pinValue.length);
+  });
+}
+function processPin() {
+  const amt = parseInt(currentAmount);
+  const fmtAmt = '₫' + amt.toLocaleString('vi-VN');
+  document.getElementById('successAmt').textContent = fmtAmt;
+  document.getElementById('successAmt2').textContent = fmtAmt;
+  document.getElementById('successNote').textContent = currentNote;
+  document.getElementById('cardAmt').textContent = fmtAmt;
+  document.getElementById('cardNote').textContent = currentNote;
+  pinValue = '';
+  updatePinDots();
+  showScreen('s-success');
+}
+
+function showDmWithCard() {
+  showScreen('s-dm-card');
+}
+
+// ========== RECEIVER ==========
+function openClaimSheet() {
+  document.getElementById('claimSheet').classList.add('open');
+}
+function closeClaimSheet() {
+  document.getElementById('claimSheet').classList.remove('open');
+}
+function confirmClaim() {
+  closeClaimSheet();
+  showScreen('s-recv-success');
+}
+function showRecvDmClaimed() {
+  showScreen('s-recv-claimed');
+}
+
+// ========== ONBOARDING ==========
+function openOnboardSheet() {
+  document.getElementById('onboardSheet').classList.add('open');
+}
+function closeOnboardSheet() {
+  document.getElementById('onboardSheet').classList.remove('open');
+}
+function goToKyc() {
+  closeOnboardSheet();
+  showScreen('s-kyc');
+}
+function goToKyc2() {
+  showScreen('s-kyc-done');
+}
+function showFinalClaim() {
+  showScreen('s-final-claim');
+}
+
+// ========== TOAST ==========
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ========== CLOSE panels when clicking overlay ==========
+document.getElementById('amountSheet').addEventListener('click', function(e) {
+  if (e.target === this) closeAmountSheet();
+});
+document.getElementById('claimSheet').addEventListener('click', function(e) {
+  if (e.target === this) closeClaimSheet();
+});
+document.getElementById('onboardSheet').addEventListener('click', function(e) {
+  if (e.target === this) closeOnboardSheet();
+});
+
+// Init
+showScreen('s-dm');
+</script>
+</body>
+</html>
